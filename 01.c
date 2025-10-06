@@ -2,22 +2,15 @@
 #include<stdlib.h>
 int cal_l(int hor,int ver)
 {
-    return hor*2+ver*2;
-}
-int move_down(float*arr,int m,int n,int i,int j,int hor,int ver,float p)//进入move时：ver和hor都是已确定的
-{
-    if(i+ver>=m)return 0;
-    for(int k=0;k<hor;k++)
-    {
-        if(arr[(i+ver)*n+j+k]<=p)return 0;
-    }
-    return 1;
+    return 2*(hor+ver);
 }
 int main()
 {
     int m,n;
-    int m_f,n_f;
-    int best_hor,best_ver;
+    int hor_int,ver_int,hor_end,ver_end;
+    int hor_f,ver_f;
+    int best_hor=0;
+    int best_ver=0;
     int l=0;
     float *arr1;
     float p;
@@ -32,34 +25,54 @@ int main()
         }
     }
     //开始判断逻辑，下面是要优化的地方
+    //思路2：先处理行，每个位置都存该行该位置前的连续的满足条件的数量，然后对新数组处理
+    //先看每个位置对应列，选出列中最小的，每选一次计算周长，和best，这样就记录了尾和长度的信息
+    int *len = (int*)calloc(m*n,sizeof(int));
     for(int i = 0;i<m;i++)
     {
         for(int j = 0;j<n;j++)
         {
-            int hor=0;//hor是先判断再更新，就是说在++后的hor才是现在的进度
-            int ver;//在++前的ver就是现在的进度
-            while((j+hor<n)&&(arr1[i*n+j+hor]>p))
+            if(arr1[i*n+j]>p)
             {
-                hor++;
-                ver=1;
-                while(move_down(arr1,m,n,i,j,hor,ver,p))
+                if(j==0)len[i*n+j]=1;
+                else len[i*n+j]=len[i*n+j-1]+1;
+            }
+            else len[i*n+j]=0;
+        }
+    }//算完了每个位置的横向连续长度，存在len里
+    for(int j=0;j<n;j++)
+    {
+        for(int i=0;i<m;i++)
+        {
+            int hor_min=n;
+            if(len[i*n+j]>0)
+            {
+                ver_int=i;
+                for(int k=0;k<m-i;k++)
                 {
-                    ver++;
-                }
-                if(cal_l(hor,ver)>l)
-                {
-                    m_f = i;
-                    n_f = j;
-                    best_hor = hor;
-                    best_ver = ver;
-                    l = cal_l(hor,ver);
+                    if(len[(i+k)*n+j]==0)break;
+                    if(len[(i+k)*n+j]<hor_min)
+                    {
+                        hor_min = len[(i+k)*n+j];
+                        ver_end = (i+k);
+                        if(cal_l(hor_min,ver_end-ver_int+1)>l)
+                        {
+                            l = cal_l(hor_min,ver_end-ver_int+1);
+                            best_hor = hor_min;
+                            best_ver = ver_end-ver_int+1;
+                            hor_f = j-hor_min+1;
+                            ver_f = ver_int;
+                        }
+                    }
                 }
             }
+            
         }
     }
-    printf("%d %d\n",m_f,m_f-1+best_ver);
-    printf("%d %d\n",n_f,n_f-1+best_hor);
-    printf("%d",l);
     free(arr1);
+    free(len);
+    printf("%d %d\n",ver_f,ver_f+best_ver-1);
+    printf("%d %d\n",hor_f,hor_f+best_hor-1);
+    printf("%d",l);
     return 0;
 }
