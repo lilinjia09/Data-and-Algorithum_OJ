@@ -25,8 +25,8 @@ int main()
         }
     }
     //开始判断逻辑，下面是要优化的地方
-    //思路2：先处理行，每个位置都存该行该位置前的连续的满足条件的数量，然后对新数组处理
-    //先看每个位置对应列，选出列中最小的，每选一次计算周长，和best，这样就记录了尾和长度的信息了
+    //思路3：先处理行，每个位置都存该行该位置前的连续的满足条件的数量，然后对新数组处理
+    //存储换时间，每列上下、下上扫两遍，多开两个数组，存第一个比自己短的位置，然后再算
     int *len = (int*)calloc(m*n,sizeof(int));
     for(int i = 0;i<m;i++)
     {
@@ -40,35 +40,64 @@ int main()
             else len[i*n+j]=0;
         }
     }//算完了每个位置的横向连续长度，存在len里
-    for(int j=0;j<n;j++)
+    int *down=(int*)malloc(m*sizeof(int));
+    int *up=(int*)malloc(m*sizeof(int));
+    int *follower=(int*)malloc((m+1)*sizeof(int));
+    int order=-1;
+    for(int j = 0;j<n;j++)
     {
+        for(int i = 0;i<m;i++)//从上往下扫，更新上方第一个比自己矮的
+        {
+            while(order!=-1&&len[i*n+j]<=len[follower[order]*n+j])
+            {
+                order--;
+            }
+            if(order==-1)
+            {
+                down[i]=-1;
+            }
+            else
+            {
+                down[i]=follower[order];
+            }
+            order++;
+            follower[order]=i;
+        }
+        order=-1;
+        for(int i=m-1;i>=0;i--)//从下往上扫，更新下方第一个比自己矮的
+        {
+            while(order!=-1&&len[i*n+j]<=len[follower[order]*n+j])
+            {
+                order--;
+            }
+            if(order==-1)
+            {
+                up[i]=m;
+            }
+            else
+            {
+                up[i]=follower[order];
+            }
+            order++;
+            follower[order]=i;
+        }
         for(int i=0;i<m;i++)
         {
-            int hor_min=n;
-            if(len[i*n+j]>0)
+            int hor=len[i*n+j];
+            int ver=up[i]-down[i]-1;
+            if(hor*ver!=0&&cal_l(hor,ver)>l)
             {
-                ver_int=i;
-                for(int k=0;k<m-i;k++)
-                {
-                    if(len[(i+k)*n+j]==0)break;
-                    if(len[(i+k)*n+j]<hor_min)
-                    {
-                        hor_min = len[(i+k)*n+j];
-                        ver_end = (i+k);
-                        if(cal_l(hor_min,ver_end-ver_int+1)>l)
-                        {
-                            l = cal_l(hor_min,ver_end-ver_int+1);
-                            best_hor = hor_min;
-                            best_ver = ver_end-ver_int+1;
-                            hor_f = j-hor_min+1;
-                            ver_f = ver_int;
-                        }
-                    }
-                }
+                l=cal_l(hor,ver);
+                hor_f=j-hor+1;
+                ver_f=down[i]+1;
+                best_hor=hor;
+                best_ver=ver;
             }
-            
         }
     }
+    free(down);
+    free(up);
+    free(follower);
     free(arr1);
     free(len);
     printf("%d %d\n",ver_f,ver_f+best_ver-1);
