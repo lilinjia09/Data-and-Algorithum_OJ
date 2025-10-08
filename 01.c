@@ -17,23 +17,13 @@ int main()
     scanf("%f",&p);
     arr1 = (float*)malloc(m*n*sizeof(float));
     int *len = (int*)calloc(m*n,sizeof(int));
-    for(int i = 0;i<m;i++)
-    {
-        for(int j = 0;j<n;j++)
-        {
-            scanf("%f",&arr1[i*n+j]);
-            if(arr1[i*n+j]>p)
-            {
-                if(j==0)len[i*n+j]=1;
-                else len[i*n+j]=len[i*n+j-1]+1;
-            }
-            else len[i*n+j]=0;
-        }
-    }
-    //开始判断逻辑，下面是要优化的地方
-    //思路4:必须尽力优化时间和空间复杂度
+    int *len1 = (int*)calloc(m , sizeof(int));//优化len空间
+    float temp_val;//优化arr1空间
     int *stack=(int*)malloc((m+1)*sizeof(int));
     int order = -1;
+    for(int j = 0; )
+    //改5:必须尽力优化时间和空间复杂度，把算法放进读取逻辑里，优化时间，把len减成一维数组，这样的话新的len就要根据之前的更新
+    
     for(int j = 0; j < n; j++)
     {
         order = -1;
@@ -43,8 +33,8 @@ int main()
             {
                 int hor = len[stack[order]*n + j];
                 order--;
-                int ver = (order == -1) ? i + 1 : i - stack[order];
-                if(cal_l(hor, ver) > l)
+                int ver = (order == -1) ? i : i - stack[order] - 1;
+                if(hor * ver != 0 && cal_l(hor, ver) > l)
                 {
                     l = cal_l(hor, ver);
                     best_hor = hor;
@@ -55,14 +45,13 @@ int main()
             }
             order++;
             stack[order] = i;
-            if(i == m - 1)
-            {
-                while(order != -1)
+        }
+        while(order != -1)
                 {
                     int hor = len[stack[order]*n + j];
                     order--;
                     int ver = (order == -1) ? m : m - stack[order] - 1;
-                    if(cal_l(hor, ver) > l)
+                    if(hor * ver != 0 && cal_l(hor, ver) > l)
                     {
                         l = cal_l(hor, ver);
                         best_hor = hor;
@@ -71,8 +60,6 @@ int main()
                         left = j - hor + 1;
                     }
                 }
-            }
-        }
     }
     free(stack);
     free(arr1);
