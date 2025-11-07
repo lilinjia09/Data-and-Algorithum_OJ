@@ -17,10 +17,15 @@ int FindMaxValue(int *tree,int n,int index,int *value)
     return 0;
     left=FindMaxValue(tree,n,2*index+1,value);
     right=FindMaxValue(tree,n,2*index+2,value);
-    int current=left+right+tree[index];
+    int left_contrib =left>0?left:0;
+    int right_contrib=right>0?right:0;
+    int current=left_contrib+right_contrib+tree[index];
     if(current>*value)
     *value=current;
-    return left>right?left+tree[index]:right+tree[index];
+    if(left_contrib>=right_contrib)
+    return left_contrib+tree[index];
+    else
+    return right_contrib+tree[index];
 }
 int main()
 {
