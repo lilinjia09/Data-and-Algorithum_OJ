@@ -5,8 +5,9 @@
 //对于学者城市，存一个数组，索引为城市编号，值为学者数量。
 //策略：去一个城市和0号城市谁更便宜就去哪里。
 //要注意的一些情况：1.1号城市单独考虑，2.起点终点同城市的情况
+//优化：1.先改改short
 int sum=-1,dst_city=-1;
-void optimize_city(int **dst,int m)
+void optimize_city(short **dst,int m)
 {
     for(int k=0;k<m;k++)
     {
@@ -31,7 +32,7 @@ void optimize_city(int **dst,int m)
         }
     }
 }
-int calc_sum(int **dst,int *s_city,int m,int city)
+int calc_sum(short **dst,int *s_city,int m,int city)
 {
     int temp_sum=0;
     for(int i=1;i<m;i++)//从1开始，0号的不需要走
@@ -59,10 +60,10 @@ int main()
 {
     int n,m,k;//参会者数量n、城市数量m、航班数量k，在程序中，a城市对应数组下标a-1
     scanf("%d%d%d",&n,&m,&k);
-    int **dst=(int **)malloc(m*sizeof(int *));
+    short **dst=(short **)malloc(m*sizeof(short *));
     for(int j=0;j<m;j++)
     {
-        dst[j]=(int *)calloc(m,sizeof(int));
+        dst[j]=(short *)calloc(m,sizeof(short));
     }
     for(int i=0;i<k;i++)
     {
