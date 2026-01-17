@@ -5,6 +5,8 @@
 #include<vector>
 #include<algorithm>
 
+#pragma warning(disable:4996)
+
 using namespace std;
 
 
@@ -13,25 +15,25 @@ int compare_reac(vector<int> front, vector<int> back)
     return max(abs(front[1]-back[0]),abs(front[3]-back[2]));
 }
 
-void add_reac(vector<vector<int>> &reac, vector<int> &temp, vector<int> &diff_time, int &total_time, int n)
+int calc_total(int current, vector<bool> &visited, vector<vector<int>> &dist, int count, int current_time,int n)
+//递归穷举所有路径
 {
-    int temp_min=1e9;
-    int idx=0;
-    for(int i=0;i<reac.size()-1;i++)
+    if(count == n)
     {
-        int time1=compare_reac(reac[i],temp);
-        int time2=compare_reac(temp,reac[i+1]);
-        int extra_time=time1+time2-diff_time[i];
-        if(extra_time<temp_min)
+        return current_time + dist[current][n + 1];
+    }
+    int min_time=1e9;
+    for(int i=1;i<=n;i++)
+    {
+        if(!visited[i])
         {
-            temp_min=extra_time;
-            idx=i;
+            visited[i]=true;
+            int time=calc_total(i,visited,dist,count+1,current_time+dist[current][i],n);
+            min_time=min(min_time,time);
+            visited[i]=false;
         }
     }
-    total_time+=temp_min;
-    diff_time[idx]=compare_reac(reac[idx],temp);
-    diff_time.insert(diff_time.begin()+idx+1,compare_reac(temp,reac[idx+1]));
-    reac.insert(reac.begin()+idx+1,temp);
+    return min_time;
 }
 
 int main()
@@ -40,26 +42,31 @@ int main()
     scanf("%d",&n);
     int total_time=0;
     int total_reac_t=0;
-    vector<vector<int>> reac(2,vector<int>(5,0));
-    reac.reserve(n+2);
-    vector<int> diff_time(1,0);
-    diff_time.reserve(n+1);
-    vector<int> neutral={7,7,7,7,0};
-    vector<int> temp(5,0);
+    vector<vector<int>> reac(n+2,vector<int>(5,0));
+    vector<int> neutral={7,7,25,25,0};
     reac[0]=neutral;
-    reac[1]=neutral;
-    for(int i=0;i<n;i++)
+    reac[n+1]={7,7,25,25,0};
+    for(int i=1;i<=n;i++)
     {
         int a,b,c,d,e;
         scanf("%d %d %d %d %d",&a,&b,&c,&d,&e);
-        temp[0]=a;
-        temp[1]=b;
-        temp[2]=c;
-        temp[3]=d;
-        temp[4]=e;
-        add_reac(reac,temp,diff_time,total_time,n);
+        reac[i]={a,b,c,d,e};
         total_reac_t+=e;
     }
+
+
+    vector<vector<int>> dist(n+2,vector<int>(n+2,0));//dist[i][j]:从i到j的反应时间，i为起点
+    for(int i=0;i<=n+1;i++)
+    {
+        for(int j=0;j<=n+1;j++)
+        {
+            dist[i][j]=compare_reac(reac[i],reac[j]);
+        }
+    }
+    vector<bool> visited(n+2,false);
+    visited[0]=true;
+    visited[n+1]=true;
+    total_time=calc_total(0,visited,dist,0,0,n);
     printf("%d",total_time+total_reac_t);
     return 0;
 }
