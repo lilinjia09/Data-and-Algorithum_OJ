@@ -1,4 +1,4 @@
-//思路：动态规划+剪枝
+//思路：DFS+剪枝
 //============================ 头文件和宏定义 ============================
 #include<cstdio>
 #include<cmath>
@@ -9,16 +9,52 @@
 
 using namespace std;
 
+int ans=1e9;
+int n;
+vector<int> min_dist; // min_dist[i]: 到节点 i的最小入边
+vector<vector<int>> dist;//dist[i][j]:从i到j的反应时间，i为起点
+vector<bool> visited;//visited[i]:节点i是否被访问过
 
 int compare_reac(const vector<int> &front, const vector<int> &back)
 {
     return max(abs(front[1]-back[0]),abs(front[3]-back[2]));
 }
 
+void dfs(int current, int count, int cost, int remain)
+{
+    // 递归终止：所有反应都访问完了
+    if(count == n)
+    {
+        int total = cost + dist[current][n + 1];
+        if(total < ans) 
+            ans = total;
+        return;
+    }
+
+    //当前代价 + 下界 >= 已知最优解，剪掉
+    //下界 = 剩余节点的最小入边之和
+    if(cost + remain >= ans)
+        return;
+    
+    // 尝试访问每个未访问的反应
+    for(int j = 1; j <= n; j++)
+    {
+        if(visited[j]) continue;
+        
+        visited[j] = true;
+        // remain 减去 min_in[j]，因为 j 即将被访问
+        dfs(j, count + 1, cost + dist[current][j], remain - min_dist[j]);
+        visited[j] = false;  // 回溯
+    }
+}
+
 int main()
 {
-    int n;
     scanf("%d",&n);
+    dist=vector<vector<int>>(n+2,vector<int>(n+2,0));
+    min_dist=vector<int>(n+2,1e9);
+    visited=vector<bool>(n+2,false);
+
     int total_reac_t=0;
     vector<vector<int>> reac(n+2,vector<int>(5,0));//0号为初始状态，n+1号为终止状态
     vector<int> neutral={7,7,25,25,0};
@@ -33,7 +69,6 @@ int main()
     }
 
 
-    vector<vector<int>> dist(n+2,vector<int>(n+2,0));//dist[i][j]:从i到j的反应时间，i为起点
     for(int i=0;i<=n+1;i++)
     {
         for(int j=0;j<=n+1;j++)
@@ -41,73 +76,23 @@ int main()
             dist[i][j]=compare_reac(reac[i],reac[j]);
         }
     }
-    int full_state= (1<<n)-1;
-    vector<vector<int>> dp(n,vector<int>(1<<n,1e9));//dp[i][s]:到达i点，状态为s的最短时间
-    //初始化,只访问一个节点
-    for(int i=0;i<n;i++)
-    {
-        dp[i][1<<i]=dist[0][i+1];//dp的i是到达点，dist的i是起点
-    }
+
+
     //下界
-    vector<int> min_dist(n+2,1e9);
-    for(int i=0;i<=n+1;i++)
+    int remain=0;
+    for(int j=1;j<=n+1;j++)//j是目标
     {
-        for(int j=0;j<=n+1;j++)
+        for(int i=0;i<=n+1;i++)//i是起点
         {
             if(i!=j)
             {
-                min_dist[i]=min(min_dist[i],dist[i][j]);
+                min_dist[j]=min(min_dist[j],dist[i][j]);
             }
         }
+        remain+=min_dist[j];
     }
-
-    int ans=1e9;
-
-    for(int state=1;state<=full_state;state++)
-    {
-        for(int i=0;i<n;i++)
-        {
-            if(!(state & (1<<i)))//i不在state中
-            {
-                continue;
-            }
-            if(dp[i][state]==1e9)//不可达状态
-            {
-                continue;
-            }
-
-            int lower_bound=dist[i+1][n+1];//回终点的距离
-            //计算下界
-            for(int j=0;j<n;j++)
-            {
-                if(!(state & (1<<j)))//j不在state中
-                {
-                    lower_bound+=min_dist[j+1];
-                }
-            }
-            if(dp[i][state]+lower_bound>=ans)//剪枝
-            {
-                continue;
-            }
-
-            if(state==full_state)//访问完所有节点，更新答案
-            {
-                ans=min(ans,dp[i][state]+dist[i+1][n+1]);
-                continue;
-            }
-
-            for(int j=0;j<n;j++)
-            {
-                if(state & (1<<j))//j已经在state中
-                {
-                    continue;
-                }
-                int next_state=state | (1<<j);//将j加入state
-                dp[j][next_state]=min(dp[j][next_state],dp[i][state]+dist[i+1][j+1]);
-            }
-
-        }
-    }
+    dfs(0,0,0,remain);
+    
     printf("%d",ans+total_reac_t);
     return 0;
 }
