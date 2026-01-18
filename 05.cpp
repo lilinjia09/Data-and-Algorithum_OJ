@@ -1,4 +1,4 @@
-//思路：DFS+剪枝
+//思路：DFS+剪枝-加强剪枝限制
 //============================ 头文件和宏定义 ============================
 #include<cstdio>
 #include<cmath>
@@ -14,6 +14,7 @@ int n;
 vector<int> min_dist; // min_dist[i]: 到节点 i的最小入边
 vector<vector<int>> dist;//dist[i][j]:从i到j的反应时间，i为起点
 vector<bool> visited;//visited[i]:节点i是否被访问过
+vector<vector<int>> sorted_next;  // sorted_next[i]: 从节点 i 出发，按距离排序的下一节点列表
 
 int compare_reac(const vector<int> &front, const vector<int> &back)
 {
@@ -37,8 +38,9 @@ void dfs(int current, int count, int cost, int remain)
         return;
     
     // 尝试访问每个未访问的反应
-    for(int j = 1; j <= n; j++)
+    for(int idx=0;idx<sorted_next[current].size();idx++)
     {
+        int j=sorted_next[current][idx];
         if(visited[j]) continue;
         
         visited[j] = true;
@@ -46,6 +48,32 @@ void dfs(int current, int count, int cost, int remain)
         dfs(j, count + 1, cost + dist[current][j], remain - min_dist[j]);
         visited[j] = false;  // 回溯
     }
+}
+
+int greed()
+{
+    vector<bool> vis(n+2,false);
+    int current=0;
+    int total_cost=0;
+    vis[0]=true;
+    for(int step=0;step<n;step++)
+    {
+        int next_node=-1;
+        int min_cost=1e9;
+        for(int j=1;j<=n;j++)
+        {
+            if(!vis[j]&&dist[current][j]<min_cost)
+            {
+                min_cost=dist[current][j];
+                next_node=j;
+            }
+        }
+        vis[next_node]=true;
+        total_cost+=min_cost;
+        current=next_node;
+    }
+    total_cost+=dist[current][n+1];
+    return total_cost;
 }
 
 int main()
@@ -76,6 +104,24 @@ int main()
             dist[i][j]=compare_reac(reac[i],reac[j]);
         }
     }
+    //预处理sorted_next
+    sorted_next=vector<vector<int>>(n+2);
+    for(int i=0;i<=n+1;i++)
+    {
+        vector<pair<int,int>> temp; // pair<距离, 节点>
+        for(int j=1;j<=n;j++)
+        {
+            if(i!=j)
+            {
+                temp.push_back({dist[i][j],j});
+            }
+        }
+        sort(temp.begin(),temp.end());
+        for(int k = 0; k < temp.size(); k++)
+        {
+            sorted_next[i].push_back(temp[k].second);
+        }
+    }
 
 
     //下界
@@ -91,6 +137,9 @@ int main()
         }
         remain+=min_dist[j];
     }
+
+    //贪心求解初始解
+    ans=greed();
     dfs(0,0,0,remain);
     
     printf("%d",ans+total_reac_t);
